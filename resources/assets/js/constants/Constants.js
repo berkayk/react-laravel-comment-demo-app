@@ -4,7 +4,8 @@
 var keyMirror = require('keymirror');
 
 module.exports = keyMirror({
-    ADD_COMMENT: null,
+    ADDING_COMMENT: null,
+    COMMENT_SENT: null,
     FETCHING_COMMENTS: null,
     COMMENTS_FETCHED: null
 });

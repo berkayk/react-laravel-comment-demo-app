@@ -10,10 +10,19 @@ var CommentActions = {
     /**
      * @param  {string} text
      */
-    create: function (text) {
+    send: function (author, text) {
+        console.log("Sending '" + text + "' as " + author);
         AppDispatcher.dispatch({
-            actionType: Constants.ADD_COMMENT,
-            text: text
+            actionType: Constants.ADDING_COMMENT
+        });
+
+        var comment = {author: author, comment: text, _token: Globals.token};
+        $.post("api/comment", comment, function(result){
+            console.log("Comment is sent results " + result);
+            AppDispatcher.dispatch({
+                actionType: Constants.COMMENT_SENT,
+                data: result
+            });
         });
     },
     fetch: function(){

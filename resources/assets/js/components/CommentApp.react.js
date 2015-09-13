@@ -7,9 +7,10 @@ var CommentEditor = require('./CommentEditor.react.js');
 var CommentStore = require('../store/CommentStore.js');
 var CommentActions = require('../actions/CommentActions.js');
 
-function getAll(){
+function refresh(){
     return {
-        comments: CommentStore.getAll()
+        comments: CommentStore.getAll(),
+        waitingResponse: false
     };
 }
 
@@ -22,16 +23,24 @@ var CommentApp = React.createClass({
     componentDidMount: function(){
         console.log('App is mounted');
         CommentStore.addChangeListener(this._onCommentsChanged);
+        CommentStore.addLoadingListener(this._onLoading);
         CommentActions.fetch();
     },
     render: function(){
-        return <div>
-            <CommentList comments={this.state.comments}/>
-            <CommentEditor />
+        return <div className="row">
+            <div className="col-sm-6">
+                <CommentList comments={this.state.comments}/>
+            </div>
+            <div className="col-sm-6">
+            <CommentEditor ref="editor"/>
+            </div>
             </div>
     },
     _onCommentsChanged: function(){
-        this.setState(getAll());
+        this.setState(refresh());
+        this.refs.editor.reset();
+    },
+    _onLoading: function(){
     }
 });
 

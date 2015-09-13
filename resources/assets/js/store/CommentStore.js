@@ -9,6 +9,11 @@ var LOADING_EVENT = 'loading';
 
 var _comments = [];
 
+function addComment(data){
+    _comments.unshift(data);
+    CommentStore.emitChange();
+}
+
 function fillComments(data){
     _comments = data;
     CommentStore.emitChange();
@@ -44,12 +49,9 @@ AppDispatcher.register(function(action) {
     var text;
 
     switch(action.actionType) {
-        case Constants.ADD_COMMENT:
-            text = action.text.trim();
-            if (text !== '') {
-                create(text);
-                CommentStore.emitChange();
-            }
+        case Constants.COMMENT_SENT:
+            console.log("Adding comment " + action.data);
+            addComment(action.data);
             break;
         case Constants.FETCHING_COMMENTS:
             CommentStore.emitLoading();

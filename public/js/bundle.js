@@ -29731,10 +29731,19 @@ var CommentActions = {
     /**
      * @param  {string} text
      */
-    create: function create(text) {
+    send: function send(author, text) {
+        console.log("Sending '" + text + "' as " + author);
         AppDispatcher.dispatch({
-            actionType: Constants.ADD_COMMENT,
-            text: text
+            actionType: Constants.ADDING_COMMENT
+        });
+
+        var comment = { author: author, comment: text, _token: Globals.token };
+        $.post("api/comment", comment, function (result) {
+            console.log("Comment is sent results " + result);
+            AppDispatcher.dispatch({
+                actionType: Constants.COMMENT_SENT,
+                data: result
+            });
         });
     },
     fetch: function fetch() {
@@ -29778,9 +29787,10 @@ var CommentEditor = require('./CommentEditor.react.js');
 var CommentStore = require('../store/CommentStore.js');
 var CommentActions = require('../actions/CommentActions.js');
 
-function getAll() {
+function refresh() {
     return {
-        comments: CommentStore.getAll()
+        comments: CommentStore.getAll(),
+        waitingResponse: false
     };
 }
 
@@ -29795,19 +29805,30 @@ var CommentApp = React.createClass({
     componentDidMount: function componentDidMount() {
         console.log('App is mounted');
         CommentStore.addChangeListener(this._onCommentsChanged);
+        CommentStore.addLoadingListener(this._onLoading);
         CommentActions.fetch();
     },
     render: function render() {
         return React.createElement(
             'div',
-            null,
-            React.createElement(CommentList, { comments: this.state.comments }),
-            React.createElement(CommentEditor, null)
+            { className: 'row' },
+            React.createElement(
+                'div',
+                { className: 'col-sm-6' },
+                React.createElement(CommentList, { comments: this.state.comments })
+            ),
+            React.createElement(
+                'div',
+                { className: 'col-sm-6' },
+                React.createElement(CommentEditor, { ref: 'editor' })
+            )
         );
     },
     _onCommentsChanged: function _onCommentsChanged() {
-        this.setState(getAll());
-    }
+        this.setState(refresh());
+        this.refs.editor.reset();
+    },
+    _onLoading: function _onLoading() {}
 });
 
 module.exports = CommentApp;
@@ -29819,34 +29840,102 @@ module.exports = CommentApp;
 'use strict';
 
 var React = require('react');
+var CommentActions = require('../actions/CommentActions');
 
 var CommentEditor = React.createClass({
     displayName: 'CommentEditor',
 
+    getInitialState: function getInitialState() {
+        return {
+            author: "Guest" + Math.floor(Math.random() * 1000 + 1),
+            comment: ""
+        };
+    },
+    reset: function reset() {
+        this.setState({ waitingResponse: false, comment: "" });
+    },
+    _onClickSend: function _onClickSend() {
+        console.log("Sending " + this.state.comment + " as " + this.state.author);
+        this.setState({ waitingResponse: true });
+        CommentActions.send(this.state.author, this.state.comment);
+    },
+    _onChangeAuthor: function _onChangeAuthor(event) {
+        this.setState({ author: event.target.value });
+    },
+    _onChangeComment: function _onChangeComment(event) {
+        this.setState({ comment: event.target.value });
+    },
     render: function render() {
         return React.createElement(
             'div',
             null,
-            React.createElement('textarea', null)
+            React.createElement(
+                'h2',
+                { className: 'thin' },
+                'Write Your Comment Here'
+            ),
+            React.createElement(
+                'div',
+                { className: 'editor-wrapper' },
+                React.createElement(
+                    'div',
+                    { className: 'form-group' },
+                    React.createElement(
+                        'label',
+                        { forName: 'author' },
+                        'Posting as: '
+                    ),
+                    React.createElement('input', { id: 'author', ref: 'author', className: 'form-control inline', placeholder: 'Your name goes here...', readOnly: this.state.waitingResponse, type: 'text', value: this.state.author, onChange: this._onChangeAuthor })
+                ),
+                React.createElement(
+                    'div',
+                    { className: 'form-group' },
+                    React.createElement(
+                        'label',
+                        { forName: 'comment' },
+                        'Comment: '
+                    ),
+                    React.createElement('textarea', { id: 'comment', ref: 'comment', className: 'form-control inline', placeholder: 'Your comment here...', readOnly: this.state.waitingResponse, value: this.state.comment, onChange: this._onChangeComment })
+                ),
+                React.createElement(
+                    'a',
+                    { className: 'btn btn-primary', disabled: this.state.waitingResponse, onClick: this._onClickSend },
+                    'Send'
+                )
+            )
         );
     }
 });
 
 module.exports = CommentEditor;
 
-},{"react":163}],168:[function(require,module,exports){
-'use strict';
+},{"../actions/CommentActions":164,"react":163}],168:[function(require,module,exports){
+"use strict";
 
 var React = require('react');
 
 var CommentItem = React.createClass({
-    displayName: 'CommentItem',
+    displayName: "CommentItem",
 
     render: function render() {
         return React.createElement(
-            'li',
-            { key: this.props.key },
-            this.props.comment
+            "div",
+            { className: "comment-wrapper", key: this.props.key },
+            React.createElement(
+                "div",
+                { className: "bold" },
+                this.props.author
+            ),
+            React.createElement(
+                "p",
+                null,
+                this.props.comment
+            ),
+            React.createElement(
+                "small",
+                { className: "gray" },
+                this.props.sentAt
+            )
         );
     }
 });
@@ -29866,12 +29955,21 @@ var CommentList = React.createClass({
     displayName: 'CommentList',
 
     render: function render() {
-        var items = this.props.comments.map(function (item, key) {
-            return React.createElement(CommentItem, { key: key, comment: item.comment });
-        });
-        return;
-        React.createElement(
-            'ul',
+        var count = this.props.comments.length;
+        if (count < 1) return React.createElement(
+            'div',
+            null,
+            'No comments yet. Be the first one to comment.'
+        );
+
+        var items = [];
+        for (var i = 0; i < count; i++) {
+            var item = this.props.comments[i];
+            items.push(React.createElement(CommentItem, { key: i, comment: item.comment, author: item.author, sentAt: item.created_at }));
+        }
+
+        return React.createElement(
+            'div',
             null,
             items
         );
@@ -29889,7 +29987,8 @@ module.exports = CommentList;
 var keyMirror = require('keymirror');
 
 module.exports = keyMirror({
-    ADD_COMMENT: null,
+    ADDING_COMMENT: null,
+    COMMENT_SENT: null,
     FETCHING_COMMENTS: null,
     COMMENTS_FETCHED: null
 });
@@ -29914,6 +30013,11 @@ var CHANGE_EVENT = 'change';
 var LOADING_EVENT = 'loading';
 
 var _comments = [];
+
+function addComment(data) {
+    _comments.unshift(data);
+    CommentStore.emitChange();
+}
 
 function fillComments(data) {
     _comments = data;
@@ -29950,12 +30054,9 @@ AppDispatcher.register(function (action) {
     var text;
 
     switch (action.actionType) {
-        case Constants.ADD_COMMENT:
-            text = action.text.trim();
-            if (text !== '') {
-                create(text);
-                CommentStore.emitChange();
-            }
+        case Constants.COMMENT_SENT:
+            console.log("Adding comment " + action.data);
+            addComment(action.data);
             break;
         case Constants.FETCHING_COMMENTS:
             CommentStore.emitLoading();

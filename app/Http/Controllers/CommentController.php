@@ -18,7 +18,7 @@ class CommentController extends Controller
     public function index()
     {
         //
-        return Comment::all();
+        return Comment::orderBy('created_at', 'DESC')->limit(5)->get();
     }
 
     /**
@@ -40,6 +40,12 @@ class CommentController extends Controller
     public function store(Request $request)
     {
         //
+        $comment = new Comment();
+        $comment->author = $request->input("author");
+        $comment->comment = $request->input("comment");
+        $comment->save();
+
+        return $comment;
     }
 
     /**

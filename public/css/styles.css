@@ -10,3 +10,22 @@ html body{
 .bold{
     font-weight: 700;
 }
+
+.inline{
+    display: inline-block;
+}
+
+.comment-wrapper{
+    padding: 12px 0;
+    border-bottom: 1px solid #E0E0E0;
+}
+
+.gray{
+    color: #BBB;
+}
+
+.editor-wrapper{
+    background-color: #F0F0F0;
+    border: 1px solid #E0E0E0;
+    padding: 12px;
+}

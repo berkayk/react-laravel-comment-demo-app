@@ -6,13 +6,18 @@ var CommentItem = require('./CommentItem.react');
 
 var CommentList = React.createClass({
     render: function(){
-        var items = this.props.comments.map(function(item, key){
-            return <CommentItem key={key} comment={item.comment} />
-        });
-        return
-            <ul>
-            {items}
-            </ul>
+        var count = this.props.comments.length;
+        if (count < 1)
+            return <div>No comments yet. Be the first one to comment.</div>;
+
+        var items = [];
+        for (var i = 0; i < count; i++){
+            var item = this.props.comments[i];
+            items.push(<CommentItem key={i} comment={item.comment} author={item.author} sentAt={item.created_at}/>);
+        }
+
+        return <div>{items}</div>
+
     }
 });
 
