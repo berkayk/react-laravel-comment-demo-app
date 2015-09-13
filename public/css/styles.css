@@ -1,0 +1,12 @@
+html body{
+    font-family: 'Oxygen', sans-serif;
+    color: #555;
+}
+
+.thin{
+    font-weight: 300;
+}
+
+.bold{
+    font-weight: 700;
+}
